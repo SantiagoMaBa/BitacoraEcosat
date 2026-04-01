@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  SUPERVISOR
+  TECHNICIAN
+}
+
+enum ReportStatus {
+  DRAFT
+  READY_FOR_REVIEW
+  READY_FOR_SIGNATURE
+  SIGNED
+  CLOSED
+}
+
+enum EvidenceType {
+  PHOTO
+  VIDEO
+  PDF
+  AUDIO
+}
+
+enum SignatureType {
+  TECHNICIAN
+  CLIENT
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  role         Role
+  active       Boolean  @default(true)
+  supervisorId String?
+  supervisor   User?    @relation("SupervisorToTechnicians", fields: [supervisorId], references: [id])
+  technicians  User[]   @relation("SupervisorToTechnicians")
+  branches     TechnicianBranch[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  reports      Report[] @relation("TechnicianReports")
+  supervises   Report[] @relation("SupervisorReports")
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  branches  Branch[]
+  reports   Report[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Branch {
+  id        String   @id @default(cuid())
+  clientId  String
+  name      String
+  location  String?
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  reports   Report[]
+  techLinks TechnicianBranch[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TechnicianBranch {
+  id           String   @id @default(cuid())
+  technicianId String
+  branchId     String
+  technician   User     @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  branch       Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+
+  @@unique([technicianId, branchId])
+}
+
+model Report {
+  id            String       @id @default(cuid())
+  folio         String       @unique
+  technicianId  String
+  supervisorId  String
+  clientId      String
+  branchId      String
+  serviceType   String
+  status        ReportStatus @default(DRAFT)
+  startedAt     DateTime?
+  endedAt       DateTime?
+  rawText       String
+  structured    Json
+  summary       String
+  version       Int          @default(1)
+  locked        Boolean      @default(false)
+  technician    User         @relation("TechnicianReports", fields: [technicianId], references: [id])
+  supervisor    User         @relation("SupervisorReports", fields: [supervisorId], references: [id])
+  client        Client       @relation(fields: [clientId], references: [id])
+  branch        Branch       @relation(fields: [branchId], references: [id])
+  evidences     Evidence[]
+  signatures    Signature[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Evidence {
+  id        String       @id @default(cuid())
+  reportId  String
+  type      EvidenceType
+  filename  String
+  mime      String
+  path      String
+  report    Report       @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+}
+
+model Signature {
+  id        String        @id @default(cuid())
+  reportId  String
+  type      SignatureType
+  name      String
+  imagePng  String
+  signedAt  DateTime      @default(now())
+  version   Int
+  report    Report        @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@unique([reportId, type, version])
+}
