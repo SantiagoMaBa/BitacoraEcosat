@@ -1,5 +1,13 @@
 export type StructuredReport = {
   transcripcion_original: string;
+  meta?: {
+    cliente: string | null;
+    sucursal: string | null;
+    tipo_servicio: string | null;
+    fecha: string | null; // YYYY-MM-DD
+    hora_inicio: string | null; // HH:MM (24h)
+    hora_fin: string | null; // HH:MM (24h)
+  };
   resumen: string;
   actividades: string[];
   hallazgos: string[];
@@ -63,6 +71,14 @@ export function structureFromText(rawText: string): StructuredReport {
 
   return {
     transcripcion_original: rawText.trim(),
+    meta: {
+      cliente: null,
+      sucursal: null,
+      tipo_servicio: null,
+      fecha: null,
+      hora_inicio: null,
+      hora_fin: null,
+    },
     resumen,
     actividades,
     hallazgos,

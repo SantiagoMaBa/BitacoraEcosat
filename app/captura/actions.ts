@@ -112,6 +112,7 @@ async function createReport(formData: FormData, status: "DRAFT" | "READY_FOR_SIG
             const parsed = JSON.parse(structuredJson);
             return {
               transcripcion_original: rawText.trim(),
+              meta: parsed.meta ?? undefined,
               resumen: String(summaryOverride || parsed.resumen || "").trim() || "Servicio registrado.",
               actividades: linesToArray(activitiesLines, parsed.actividades),
               hallazgos: linesToArray(findingsLines, parsed.hallazgos),
