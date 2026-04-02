@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Next.js 16: middleware.ts is deprecated in favor of proxy.ts.
-// Keep this file Edge-safe (no Node.js-only imports).
-
 const PUBLIC_PATHS = ["/login", "/favicon.ico"];
 const DEMO_COOKIE_NAME = "ecosat_demo_user";
 
@@ -31,4 +28,3 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: ["/((?!.*\\..*).*)"],
 };
-
