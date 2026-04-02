@@ -25,6 +25,14 @@ npm run db:seed
 npm run dev
 ```
 
+### Probar en celular (misma red WiFi)
+
+```bash
+npm run dev:lan
+```
+
+Luego abre desde tu celular `http://IP_DE_TU_MAC:3000/login`.
+
 ## OpenAI (opcional)
 
 - Coloca `OPENAI_API_KEY` en `./.env.local` (no se commitea) o exportala en tu terminal.

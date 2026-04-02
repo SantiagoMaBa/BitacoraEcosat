@@ -1,5 +1,11 @@
 /* eslint-disable no-console */
-require("dotenv").config();
+const fs = require("node:fs");
+const dotenv = require("dotenv");
+if (fs.existsSync(".env.local")) {
+  dotenv.config({ path: ".env.local" });
+} else {
+  dotenv.config();
+}
 const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
