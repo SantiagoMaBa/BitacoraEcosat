@@ -4,8 +4,11 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  // Supabase/Vercel integration commonly provides these env vars:
+  // - POSTGRES_PRISMA_URL (pooled; ideal for serverless)
+  // - POSTGRES_URL_NON_POOLING (direct; required for migrations)
+  url       = env("POSTGRES_PRISMA_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
 enum Role {

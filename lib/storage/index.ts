@@ -11,8 +11,43 @@ export type StoredEvidence = {
   publicUrl?: string;
 };
 
+const ensuredBuckets = new Set<string>();
+
 function sanitizeFilename(name: string) {
   return (name || "evidencia").replace(/[^\w.\-]+/g, "_").slice(0, 120);
+}
+
+async function ensureBucketExists(bucket: string) {
+  if (ensuredBuckets.has(bucket)) return;
+
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return;
+
+  try {
+    const listed = await supabase.storage.listBuckets();
+    if (!listed.error) {
+      const found = (listed.data || []).some((b) => b.name === bucket);
+      if (found) {
+        ensuredBuckets.add(bucket);
+        return;
+      }
+    }
+  } catch {
+    // ignore and try create
+  }
+
+  try {
+    const created = await supabase.storage.createBucket(bucket, { public: false });
+    if (!created.error) {
+      ensuredBuckets.add(bucket);
+      return;
+    }
+  } catch {
+    // ignore
+  }
+
+  // Even if create fails (already exists / permissions), don't retry per request.
+  ensuredBuckets.add(bucket);
 }
 
 export async function storeEvidenceFile(params: {
@@ -24,6 +59,7 @@ export async function storeEvidenceFile(params: {
   const supabase = getSupabaseAdmin();
   if (supabase) {
     const bucket = getEvidenceBucket();
+    await ensureBucketExists(bucket);
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
     const rand = crypto.randomBytes(6).toString("hex").toUpperCase();
     const safeOriginal = sanitizeFilename(params.originalFilename);
