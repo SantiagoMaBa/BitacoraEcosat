@@ -224,6 +224,28 @@ textarea {
   line-height: 1.6;
 }
 
+.skeleton-block {
+  height: 18px;
+  margin-bottom: 14px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(41, 52, 143, 0.08), rgba(41, 52, 143, 0.14), rgba(41, 52, 143, 0.08));
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+
+.skeleton-block:last-child {
+  width: 65%;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 .content-section .section-title p,
 .content-section .muted,
 .module-card p,

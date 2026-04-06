@@ -1,42 +1,14 @@
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { createDraftAction, createStructuredReportAction } from "./actions";
 import { CaptureFlow } from "@/components/capture-flow";
+import { DEMO_BRANCH_OPTIONS } from "@/lib/catalogs";
 
 export const dynamic = "force-dynamic";
 
 export default async function CapturePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-
-  const branchOptions =
-    user.role === "TECHNICIAN"
-      ? (
-          await prisma.technicianBranch.findMany({
-            where: { technicianId: user.id },
-            select: {
-              branch: {
-                select: {
-                  id: true,
-                  name: true,
-                  location: true,
-                  client: { select: { name: true } },
-                },
-              },
-            },
-            orderBy: { createdAt: "asc" },
-          })
-        ).map((entry) => entry.branch)
-      : await prisma.branch.findMany({
-          select: {
-            id: true,
-            name: true,
-            location: true,
-            client: { select: { name: true } },
-          },
-          orderBy: [{ client: { name: "asc" } }, { name: "asc" }],
-        });
 
   const now = new Date();
   const yyyy = now.getFullYear();
@@ -57,7 +29,7 @@ export default async function CapturePage() {
         </div>
 
         <CaptureFlow
-          branchOptions={branchOptions}
+          branchOptions={DEMO_BRANCH_OPTIONS}
           dateDefault={dateDefault}
           createAction={createStructuredReportAction}
           draftAction={createDraftAction}

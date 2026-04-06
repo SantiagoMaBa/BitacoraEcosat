@@ -141,7 +141,7 @@ export default async function ActasPage({
               Filtra por cliente, sucursal, tecnico y estatus. Abre un folio para firmar o descargar PDF.
             </p>
           </div>
-          <Link className="button button-primary" href="/captura">
+          <Link className="button button-primary" href="/captura" prefetch>
             Capturar dia
           </Link>
         </div>

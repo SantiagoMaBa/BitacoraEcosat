@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { structureReport } from "@/lib/ai";
+import { getDemoBranchById } from "@/lib/catalogs";
 
 function toDateStamp(date: Date) {
   const yy = String(date.getFullYear()).slice(-2);
@@ -96,11 +97,39 @@ async function createReport(formData: FormData, status: "DRAFT" | "READY_FOR_SIG
   const supervisorId = await allocateSupervisorId(user, technicianId);
   if (!supervisorId) redirect("/captura");
 
-  const branch = await prisma.branch.findUnique({
-    where: { id: branchId },
+  const demoBranch = getDemoBranchById(branchId);
+  if (!demoBranch) redirect("/captura");
+
+  let client = await prisma.client.findFirst({
+    where: { name: demoBranch.clientName },
+    select: { id: true, name: true },
+  });
+  if (!client) {
+    client = await prisma.client.create({
+      data: { name: demoBranch.clientName },
+      select: { id: true, name: true },
+    });
+  }
+
+  let branch = await prisma.branch.findFirst({
+    where: { clientId: client.id, name: demoBranch.branchName },
     select: { id: true, clientId: true },
   });
-  if (!branch) redirect("/captura");
+  if (!branch) {
+    branch = await prisma.branch.create({
+      data: {
+        clientId: client.id,
+        name: demoBranch.branchName,
+        location: demoBranch.location,
+      },
+      select: { id: true, clientId: true },
+    });
+  } else if (branch) {
+    await prisma.branch.update({
+      where: { id: branch.id },
+      data: { location: demoBranch.location },
+    });
+  }
 
   const stamp = toDateStamp(new Date());
   const folio = `BT-${stamp}-${Math.random().toString(16).slice(2, 6).toUpperCase()}`;

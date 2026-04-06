@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
 type BranchOption = {
   id: string;
-  name: string;
+  clientName: string;
+  branchName: string;
   location: string | null;
-  client: { name: string };
 };
 
 type Meta = {
@@ -56,8 +56,8 @@ function bestBranchMatch(branchOptions: BranchOption[], meta?: Meta) {
 
   let best: { id: string; score: number } | null = null;
   for (const b of branchOptions) {
-    const c = normalizeText(b.client.name);
-    const s = normalizeText(b.name);
+    const c = normalizeText(b.clientName);
+    const s = normalizeText(b.branchName);
     let score = 0;
 
     if (cliente) {
@@ -120,8 +120,6 @@ export function CaptureFlow({
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
 
-  const defaultBranchId = useMemo(() => "", []);
-
   useEffect(() => {
     // reset structured when rawText changes manually
     setStructured(null);
@@ -129,9 +127,7 @@ export function CaptureFlow({
 
   useEffect(() => {
     // initialize defaults based on options/date once.
-    if (!branchId && branchOptions[0]?.id) {
-      // do not auto-select; only used as fallback if user never picks.
-    }
+    if (!branchId && branchOptions[0]?.id) setBranchId(branchOptions[0].id);
     if (!serviceType) setServiceType("Servicio en sitio");
     if (!startTime) setStartTime("09:00");
     if (!endTime) setEndTime("10:00");
@@ -334,7 +330,7 @@ export function CaptureFlow({
                   <option value="">Selecciona...</option>
                   {branchOptions.map((branch) => (
                     <option key={branch.id} value={branch.id}>
-                      {branch.client.name} · {branch.name}
+                      {branch.clientName} · {branch.branchName}
                       {branch.location ? ` (${branch.location})` : ""}
                     </option>
                   ))}

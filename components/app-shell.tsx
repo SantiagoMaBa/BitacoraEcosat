@@ -78,6 +78,7 @@ export function AppShell({
                 key={item.href}
                 className={isActive ? "nav-link active" : "nav-link"}
                 href={item.href}
+                prefetch
               >
                 {item.label}
               </Link>
@@ -99,6 +100,7 @@ export function AppShell({
               key={item.href}
               className={isActive ? "mobile-link active" : "mobile-link"}
               href={item.href}
+              prefetch
             >
               <span>{item.label}</span>
             </Link>
