@@ -10,11 +10,11 @@ export async function loginAction(formData: FormData) {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, active: true },
+    select: { id: true, name: true, email: true, role: true, supervisorId: true, active: true },
   });
 
   if (!user || !user.active) redirect("/login");
 
-  await setDemoUserCookie(user.id);
+  await setDemoUserCookie(user);
   redirect("/");
 }
