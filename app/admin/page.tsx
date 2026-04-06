@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { PendingButton } from "@/components/pending-button";
 import {
   assignTechnicianAction,
   createBranchAction,
@@ -49,9 +50,9 @@ export default async function AdminPage() {
                 <span>Nombre</span>
                 <input name="name" placeholder="Nombre del cliente" required />
               </label>
-              <button className="button button-primary" type="submit">
+              <PendingButton className="button button-primary" type="submit" pendingLabel="Creando...">
                 Crear cliente
-              </button>
+              </PendingButton>
             </form>
             <div className="list">
               {clients.map((c) => (
@@ -83,9 +84,9 @@ export default async function AdminPage() {
                 <span>Ubicacion (opcional)</span>
                 <input name="location" placeholder="Ciudad, Estado" />
               </label>
-              <button className="button button-primary" type="submit">
+              <PendingButton className="button button-primary" type="submit" pendingLabel="Creando...">
                 Crear sucursal
-              </button>
+              </PendingButton>
             </form>
             <div className="list">
               {branches.map((b) => (
@@ -136,9 +137,9 @@ export default async function AdminPage() {
                   </select>
                 </label>
               </div>
-              <button className="button button-primary" type="submit">
+              <PendingButton className="button button-primary" type="submit" pendingLabel="Creando...">
                 Crear usuario
-              </button>
+              </PendingButton>
             </form>
             <div className="list">
               {users.map((u) => (
@@ -177,9 +178,9 @@ export default async function AdminPage() {
                   ))}
                 </select>
               </label>
-              <button className="button button-secondary" type="submit">
+              <PendingButton className="button button-secondary" type="submit" pendingLabel="Asignando...">
                 Asignar
-              </button>
+              </PendingButton>
             </form>
 
             <form className="form-flow" action={linkTechnicianBranchAction}>
@@ -204,9 +205,9 @@ export default async function AdminPage() {
                   ))}
                 </select>
               </label>
-              <button className="button button-secondary" type="submit">
+              <PendingButton className="button button-secondary" type="submit" pendingLabel="Vinculando...">
                 Vincular
-              </button>
+              </PendingButton>
             </form>
           </div>
         </div>
@@ -214,4 +215,3 @@ export default async function AdminPage() {
     </div>
   );
 }
-

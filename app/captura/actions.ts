@@ -69,7 +69,10 @@ function parseLocalDateTime(dateValue: string, timeValue: string) {
   return new Date(year, month - 1, day, hour, minute, 0, 0);
 }
 
-async function createReport(formData: FormData, status: "DRAFT" | "READY_FOR_SIGNATURE") {
+async function createReport(
+  formData: FormData,
+  status: "DRAFT" | "READY_FOR_REVIEW" | "READY_FOR_SIGNATURE",
+) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
@@ -97,39 +100,58 @@ async function createReport(formData: FormData, status: "DRAFT" | "READY_FOR_SIG
   const supervisorId = await allocateSupervisorId(user, technicianId);
   if (!supervisorId) redirect("/captura");
 
-  const demoBranch = getDemoBranchById(branchId);
-  if (!demoBranch) redirect("/captura");
-
-  let client = await prisma.client.findFirst({
-    where: { name: demoBranch.clientName },
-    select: { id: true, name: true },
+  const liveBranch = await prisma.branch.findUnique({
+    where: { id: branchId },
+    select: {
+      id: true,
+      clientId: true,
+      name: true,
+      location: true,
+      client: { select: { id: true, name: true } },
+    },
   });
-  if (!client) {
-    client = await prisma.client.create({
-      data: { name: demoBranch.clientName },
+
+  let branch: { id: string; clientId: string } | null = null;
+  if (liveBranch) {
+    branch = { id: liveBranch.id, clientId: liveBranch.clientId };
+  } else {
+    const demoBranch = getDemoBranchById(branchId);
+    if (!demoBranch) redirect("/captura");
+
+    let client = await prisma.client.findFirst({
+      where: { name: demoBranch.clientName },
       select: { id: true, name: true },
     });
-  }
+    if (!client) {
+      client = await prisma.client.create({
+        data: { name: demoBranch.clientName },
+        select: { id: true, name: true },
+      });
+    }
 
-  let branch = await prisma.branch.findFirst({
-    where: { clientId: client.id, name: demoBranch.branchName },
-    select: { id: true, clientId: true },
-  });
-  if (!branch) {
-    branch = await prisma.branch.create({
-      data: {
-        clientId: client.id,
-        name: demoBranch.branchName,
-        location: demoBranch.location,
-      },
+    const created = await prisma.branch.findFirst({
+      where: { clientId: client.id, name: demoBranch.branchName },
       select: { id: true, clientId: true },
     });
-  } else if (branch) {
-    await prisma.branch.update({
-      where: { id: branch.id },
-      data: { location: demoBranch.location },
-    });
+    if (!created) {
+      branch = await prisma.branch.create({
+        data: {
+          clientId: client.id,
+          name: demoBranch.branchName,
+          location: demoBranch.location,
+        },
+        select: { id: true, clientId: true },
+      });
+    } else {
+      branch = created;
+      await prisma.branch.update({
+        where: { id: created.id },
+        data: { location: demoBranch.location },
+      });
+    }
   }
+
+  if (!branch) redirect("/captura");
 
   const stamp = toDateStamp(new Date());
   const folio = `BT-${stamp}-${Math.random().toString(16).slice(2, 6).toUpperCase()}`;
@@ -186,7 +208,7 @@ export async function createDraftAction(formData: FormData) {
 }
 
 export async function createStructuredReportAction(formData: FormData) {
-  return createReport(formData, "READY_FOR_SIGNATURE");
+  return createReport(formData, "READY_FOR_REVIEW");
 }
 
 function linesToArray(text: string, fallback: unknown) {

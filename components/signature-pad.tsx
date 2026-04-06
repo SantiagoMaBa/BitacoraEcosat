@@ -14,10 +14,32 @@ export function SignaturePad({
   height?: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [hasInk, setHasInk] = useState(false);
   const [imagePng, setImagePng] = useState("");
+  const [canvasWidth, setCanvasWidth] = useState(520);
 
-  const size = useMemo(() => ({ width: 520, height }), [height]);
+  const size = useMemo(() => ({ width: canvasWidth, height }), [canvasWidth, height]);
+
+  useEffect(() => {
+    function updateWidth() {
+      const wrapperWidth = wrapperRef.current?.clientWidth ?? 520;
+      setCanvasWidth(Math.max(280, Math.min(wrapperWidth, 520)));
+    }
+
+    updateWidth();
+    const wrapper = wrapperRef.current;
+    const resizeObserver = typeof ResizeObserver !== "undefined" && wrapper ? new ResizeObserver(updateWidth) : null;
+    if (resizeObserver && wrapper) {
+      resizeObserver.observe(wrapper);
+    }
+    window.addEventListener("resize", updateWidth);
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", updateWidth);
+    };
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -67,6 +89,7 @@ export function SignaturePad({
       const p = getPoint(event);
       lastX = p.x;
       lastY = p.y;
+      setHasInk(true);
     }
 
     function onMove(event: PointerEvent) {
@@ -127,7 +150,7 @@ export function SignaturePad({
   }
 
   return (
-    <div className="signature-pad">
+    <div className="signature-pad" ref={wrapperRef}>
       <input type="hidden" name={inputName} value={imagePng} />
       <canvas ref={canvasRef} className="signature-canvas" />
       <div className="signature-actions">

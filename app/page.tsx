@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { PendingButton } from "@/components/pending-button";
 
 export const dynamic = "force-dynamic";
 
@@ -141,9 +142,9 @@ export default async function ActasPage({
               Filtra por cliente, sucursal, tecnico y estatus. Abre un folio para firmar o descargar PDF.
             </p>
           </div>
-          <Link className="button button-primary" href="/captura" prefetch>
-            Capturar dia
-          </Link>
+            <Link className="button button-primary" href="/captura" prefetch>
+              Capturar dia
+            </Link>
         </div>
 
         <div className="dash-row">
@@ -230,10 +231,10 @@ export default async function ActasPage({
           </label>
 
           <div className="filter-actions">
-            <button className="button button-secondary" type="submit">
+            <PendingButton className="button button-secondary" type="submit" pendingLabel="Aplicando...">
               Aplicar
-            </button>
-            <Link className="button button-secondary" href="/">
+            </PendingButton>
+            <Link className="button button-secondary" href="/" prefetch>
               Limpiar
             </Link>
           </div>
@@ -259,7 +260,7 @@ export default async function ActasPage({
               const hasClient = sigs.some((s) => s.type === "CLIENT");
 
               return (
-                <Link key={r.id} className="table-row" href={`/reporte/${encodeURIComponent(r.folio)}`}>
+                <Link key={r.id} className="table-row" href={`/reporte/${encodeURIComponent(r.folio)}`} prefetch>
                   <strong>{r.folio}</strong>
                   <span>
                     {r.client.name} / {r.branch.name}

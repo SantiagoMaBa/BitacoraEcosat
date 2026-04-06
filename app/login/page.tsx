@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { prisma } from "@/lib/db";
+import { PendingButton } from "@/components/pending-button";
 import { loginAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -51,9 +52,9 @@ export default async function LoginPage() {
               <span className="module-kicker">{user.role}</span>
               <h3>{user.name}</h3>
               <p>{user.email}</p>
-              <button className="button button-primary wide-button" type="submit">
+              <PendingButton className="button button-primary wide-button" type="submit" pendingLabel="Entrando...">
                 Entrar
-              </button>
+              </PendingButton>
             </form>
           ))}
         </div>

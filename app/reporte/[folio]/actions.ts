@@ -39,6 +39,10 @@ export async function signReportAction(formData: FormData) {
   });
   if (!report) redirect("/");
 
+  if (report.status !== "READY_FOR_SIGNATURE" && report.status !== "SIGNED") {
+    redirect(`/reporte/${encodeURIComponent(folio)}`);
+  }
+
   if (report.locked) {
     redirect(`/reporte/${encodeURIComponent(folio)}`);
   }
@@ -50,8 +54,7 @@ export async function signReportAction(formData: FormData) {
   }
 
   if (signatureType === "CLIENT") {
-    const allowed = user.role === "SUPERVISOR" || user.role === "ADMIN" || user.id === report.supervisorId;
-    if (!allowed) {
+    if (user && user.role === "TECHNICIAN") {
       redirect(`/reporte/${encodeURIComponent(folio)}`);
     }
   }
@@ -199,8 +202,33 @@ export async function updateReportAction(formData: FormData) {
       structured,
       version: nextVersion,
       locked: false,
-      status: "READY_FOR_SIGNATURE",
+      status: "READY_FOR_REVIEW",
     },
+  });
+
+  redirect(`/reporte/${encodeURIComponent(folio)}`);
+}
+
+export async function validateReportAction(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+
+  const folio = String(formData.get("folio") ?? "").toUpperCase();
+  if (!folio) redirect("/");
+
+  const report = await prisma.report.findUnique({
+    where: { folio },
+    select: { id: true, supervisorId: true, status: true },
+  });
+  if (!report) redirect("/");
+
+  const allowed = user.role === "ADMIN" || (user.role === "SUPERVISOR" && report.supervisorId === user.id);
+  if (!allowed) redirect(`/reporte/${encodeURIComponent(folio)}`);
+  if (report.status === "SIGNED" || report.status === "CLOSED") redirect(`/reporte/${encodeURIComponent(folio)}`);
+
+  await prisma.report.update({
+    where: { id: report.id },
+    data: { status: "READY_FOR_SIGNATURE" },
   });
 
   redirect(`/reporte/${encodeURIComponent(folio)}`);

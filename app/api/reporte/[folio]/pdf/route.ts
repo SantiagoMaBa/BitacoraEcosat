@@ -7,6 +7,8 @@ import fs from "node:fs/promises";
 
 export const runtime = "nodejs";
 
+let logoBytesPromise: Promise<Buffer> | null = null;
+
 type RouteContext = {
   params: Promise<{
     folio: string;
@@ -49,8 +51,11 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
   // Embed logo (best-effort)
   try {
-    const logoPath = path.join(process.cwd(), "public", "brand", "logo-fullcolor.png");
-    const logoBytes = await fs.readFile(logoPath);
+    if (!logoBytesPromise) {
+      const logoPath = path.join(process.cwd(), "public", "brand", "logo-fullcolor.png");
+      logoBytesPromise = fs.readFile(logoPath);
+    }
+    const logoBytes = await logoBytesPromise;
     const logo = await doc.embedPng(logoBytes);
     const scaled = logo.scale(0.18);
     page.drawImage(logo, {

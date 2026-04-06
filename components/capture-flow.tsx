@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { PendingButton } from "@/components/pending-button";
 
 type BranchOption = {
   id: string;
@@ -238,6 +239,9 @@ export function CaptureFlow({
   const purchasesLines = listToLines(structured?.compras ?? []);
   const recommendationsLines = listToLines(structured?.recomendaciones ?? []);
   const detailsUnlocked = Boolean(rawText.trim() || structured);
+  const processStep = structured ? 3 : rawText.trim() ? 2 : 1;
+  const processLabel =
+    processStep === 1 ? "1. Grabar / escribir" : processStep === 2 ? "2. Estructurar y validar" : "3. Guardar acta";
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     if (!rawText.trim()) {
@@ -258,173 +262,212 @@ export function CaptureFlow({
   }
 
   return (
-    <div className="card">
+    <div className="card capture-shell">
       {error ? <div className="alert">{error}</div> : null}
 
       <form className="form-flow" action={createAction} onSubmit={onSubmit}>
-
-        <div className="voice-row">
-          <button
-            className="button button-secondary"
-            type="button"
-            onClick={recording ? stopRecording : startRecording}
-            disabled={busy}
-          >
-            {recording ? "Detener" : "Grabar"}
-          </button>
-          <button
-            className="button button-secondary"
-            type="button"
-            onClick={() => startTransition(transcribeAndFill)}
-            disabled={!audioReady || busy}
-            title={!audioReady ? "Graba primero" : ""}
-          >
-            Transcribir
-          </button>
-          <button
-            className="button button-secondary"
-            type="button"
-            onClick={() => startTransition(structurePreview)}
-            disabled={!rawText.trim() || busy}
-          >
-            Estructurar
-          </button>
-          <span className="muted">
-            {recording ? "Grabando..." : audioReady ? "Audio listo" : "Sin audio"}
-          </span>
+        <div className="capture-banner">
+          <div>
+            <span className="eyebrow">Flujo de captura</span>
+            <h3>{processLabel}</h3>
+            <p className="muted">
+              Primero la voz, luego la estructura, luego la validación. Si falta algo, lo completas aqui sin cambiar de pantalla.
+            </p>
+          </div>
+          <div className="capture-step-list">
+            <span className={processStep >= 1 ? "step-chip step-chip-active" : "step-chip"}>Voz</span>
+            <span className={processStep >= 2 ? "step-chip step-chip-active" : "step-chip"}>Datos</span>
+            <span className={processStep >= 3 ? "step-chip step-chip-active" : "step-chip"}>Guardar</span>
+          </div>
         </div>
 
-        <label className="field">
-          <span>Que hiciste hoy (texto o transcripcion)</span>
-          <textarea
-            name="rawText"
-            value={rawText}
-            onChange={(e) => setRawText(e.target.value)}
-            placeholder="Ej: Llegue a la sucursal..., revise..., encontre..., compre..., queda pendiente..."
-            rows={10}
-            required
-          />
-        </label>
+        <div className="capture-layout">
+          <section className="capture-primary">
+            <div className="voice-panel">
+              <div className="voice-header">
+                <div>
+                  <span className="label">Grabacion</span>
+                  <h4>Registra lo realizado y usa IA solo para ordenar el contenido</h4>
+                </div>
+                <span className="voice-badge">{recording ? "Grabando" : audioReady ? "Audio listo" : "En espera"}</span>
+              </div>
 
-        <input type="hidden" name="structuredJson" value={structured ? JSON.stringify(structured) : ""} />
-
-        {detailsUnlocked ? (
-          <div className="card-section">
-            <div className="section-title">
-              <h3>Datos del servicio</h3>
-              <p className="muted">
-                La idea es que esto salga de la grabacion. Si no se detecta, seleccionalo aqui antes de guardar.
-              </p>
-            </div>
-
-            <div className="form-grid">
-              <label className="field">
-                <span>Cliente / sucursal</span>
-                <select
-                  className="select"
-                  name="branchId"
-                  value={branchId}
-                  onChange={(e) => setBranchId(e.target.value)}
-                  required
+              <div className="voice-row">
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  onClick={recording ? stopRecording : startRecording}
+                  disabled={busy}
                 >
-                  <option value="">Selecciona...</option>
-                  {branchOptions.map((branch) => (
-                    <option key={branch.id} value={branch.id}>
-                      {branch.clientName} · {branch.branchName}
-                      {branch.location ? ` (${branch.location})` : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  {recording ? "Detener" : "Grabar"}
+                </button>
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  onClick={() => startTransition(transcribeAndFill)}
+                  disabled={!audioReady || busy}
+                  title={!audioReady ? "Graba primero" : ""}
+                >
+                  Transcribir
+                </button>
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  onClick={() => startTransition(structurePreview)}
+                  disabled={!rawText.trim() || busy}
+                >
+                  Estructurar
+                </button>
+              </div>
+
+              <div className="checklist-panel">
+                <div className="check-item">
+                  <span className="check-icon check-ok" />
+                  <div>
+                    <strong>Voz o texto</strong>
+                    <p>Dicta la jornada en lenguaje natural. La IA la separa en actividades, hallazgos, compras y pendientes.</p>
+                  </div>
+                </div>
+                <div className="check-item">
+                  <span className="check-icon check-warn" />
+                  <div>
+                    <strong>Validacion manual</strong>
+                    <p>Si la IA no detecta cliente, sucursal o horario, lo corriges aqui antes de guardar.</p>
+                  </div>
+                </div>
+              </div>
 
               <label className="field">
-                <span>Tipo de servicio</span>
-                <input
-                  name="serviceType"
-                  value={serviceType}
-                  onChange={(e) => setServiceType(e.target.value)}
+                <span>Que hiciste hoy (texto o transcripcion)</span>
+                <textarea
+                  name="rawText"
+                  value={rawText}
+                  onChange={(e) => setRawText(e.target.value)}
+                  placeholder="Ej: Llegue a la sucursal..., revise..., encontre..., compre..., queda pendiente..."
+                  rows={10}
                   required
                 />
               </label>
-
-              <label className="field">
-                <span>Fecha</span>
-                <input type="date" name="date" value={date} onChange={(e) => setDate(e.target.value)} />
-              </label>
-
-              <label className="field">
-                <span>Hora inicio</span>
-                <input
-                  type="time"
-                  name="startTime"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                />
-              </label>
-
-              <label className="field">
-                <span>Hora fin</span>
-                <input type="time" name="endTime" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
-              </label>
             </div>
+          </section>
+
+          <section className="capture-secondary">
+            <input type="hidden" name="structuredJson" value={structured ? JSON.stringify(structured) : ""} />
+
+            {detailsUnlocked ? (
+              <div className="card-section">
+                <div className="section-title">
+                  <span className="label">Datos del servicio</span>
+                  <h3>Cliente, sucursal y horario</h3>
+                  <p className="muted">
+                    La idea es que esto salga de la grabacion. Si no se detecta, seleccionalo aqui antes de guardar.
+                  </p>
+                </div>
+
+                <div className="form-grid">
+                  <label className="field">
+                    <span>Cliente / sucursal</span>
+                    <select
+                      className="select"
+                      name="branchId"
+                      value={branchId}
+                      onChange={(e) => setBranchId(e.target.value)}
+                      required
+                    >
+                      <option value="">Selecciona...</option>
+                      {branchOptions.map((branch) => (
+                        <option key={branch.id} value={branch.id}>
+                          {branch.clientName} · {branch.branchName}
+                          {branch.location ? ` (${branch.location})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="field">
+                    <span>Tipo de servicio</span>
+                    <input
+                      name="serviceType"
+                      value={serviceType}
+                      onChange={(e) => setServiceType(e.target.value)}
+                      required
+                    />
+                  </label>
+
+                  <label className="field">
+                    <span>Fecha</span>
+                    <input type="date" name="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                  </label>
+
+                  <label className="field">
+                    <span>Hora inicio</span>
+                    <input
+                      type="time"
+                      name="startTime"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                    />
+                  </label>
+
+                  <label className="field">
+                    <span>Hora fin</span>
+                    <input type="time" name="endTime" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+                  </label>
+                </div>
+              </div>
+            ) : null}
+
+            {structured ? (
+              <div className="edit-grid">
+                <div className="card-section">
+                  <span className="label">Resumen</span>
+                  <textarea name="summaryOverride" defaultValue={structured.resumen} rows={3} />
+                </div>
+
+                <div className="mini-cols">
+                  <label className="field">
+                    <span>Actividades (1 por linea)</span>
+                    <textarea name="activitiesLines" defaultValue={activitiesLines} rows={6} />
+                  </label>
+                  <label className="field">
+                    <span>Hallazgos (1 por linea)</span>
+                    <textarea name="findingsLines" defaultValue={findingsLines} rows={6} />
+                  </label>
+                </div>
+
+                <div className="mini-cols">
+                  <label className="field">
+                    <span>Pendientes (1 por linea)</span>
+                    <textarea name="pendingLines" defaultValue={pendingLines} rows={6} />
+                  </label>
+                  <label className="field">
+                    <span>Compras (1 por linea)</span>
+                    <textarea name="purchasesLines" defaultValue={purchasesLines} rows={6} />
+                  </label>
+                </div>
+
+                <label className="field">
+                  <span>Recomendaciones (1 por linea)</span>
+                  <textarea name="recommendationsLines" defaultValue={recommendationsLines} rows={5} />
+                </label>
+              </div>
+            ) : null}
+          </section>
+        </div>
+
+        <div className="action-row action-row-spread">
+          <div className="action-hint">
+            <span className="label">Guardado</span>
+            <strong>Enviar a revision para validar antes de firmar</strong>
           </div>
-        ) : null}
-
-        {structured ? (
-          <div className="edit-grid">
-            <div className="card-section">
-              <span className="label">Resumen</span>
-              <textarea
-                name="summaryOverride"
-                defaultValue={structured.resumen}
-                rows={3}
-              />
-            </div>
-
-            <div className="mini-cols">
-              <label className="field">
-                <span>Actividades (1 por linea)</span>
-                <textarea
-                  name="activitiesLines"
-                  defaultValue={activitiesLines}
-                  rows={6}
-                />
-              </label>
-              <label className="field">
-                <span>Hallazgos (1 por linea)</span>
-                <textarea
-                  name="findingsLines"
-                  defaultValue={findingsLines}
-                  rows={6}
-                />
-              </label>
-            </div>
-
-            <div className="mini-cols">
-              <label className="field">
-                <span>Pendientes (1 por linea)</span>
-                <textarea name="pendingLines" defaultValue={pendingLines} rows={6} />
-              </label>
-              <label className="field">
-                <span>Compras (1 por linea)</span>
-                <textarea name="purchasesLines" defaultValue={purchasesLines} rows={6} />
-              </label>
-            </div>
-
-            <label className="field">
-              <span>Recomendaciones (1 por linea)</span>
-              <textarea name="recommendationsLines" defaultValue={recommendationsLines} rows={5} />
-            </label>
+          <div className="action-buttons">
+            <PendingButton className="button button-primary" type="submit" disabled={busy} pendingLabel="Guardando...">
+              Guardar y revisar
+            </PendingButton>
+            <PendingButton className="button button-secondary" formAction={draftAction} disabled={busy} pendingLabel="Guardando...">
+              Guardar borrador
+            </PendingButton>
           </div>
-        ) : null}
-
-        <div className="action-row">
-          <button className="button button-primary" type="submit" disabled={busy}>
-            Guardar acta
-          </button>
-          <button className="button button-secondary" formAction={draftAction} disabled={busy}>
-            Guardar borrador
-          </button>
         </div>
       </form>
     </div>

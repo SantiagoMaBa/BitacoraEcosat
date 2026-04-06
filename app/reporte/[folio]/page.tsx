@@ -3,7 +3,14 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { SignaturePad } from "@/components/signature-pad";
-import { closeReportAction, signReportAction, updateReportAction, uploadEvidenceAction } from "./actions";
+import { PendingButton } from "@/components/pending-button";
+import {
+  closeReportAction,
+  signReportAction,
+  updateReportAction,
+  uploadEvidenceAction,
+  validateReportAction,
+} from "./actions";
 
 type ReportPageProps = {
   params: Promise<{
@@ -66,6 +73,8 @@ export default async function ReportPage({ params }: ReportPageProps) {
   const recommendations: string[] = Array.isArray(structured?.recomendaciones) ? structured.recomendaciones : [];
   const techSig = report.signatures.find((sig) => sig.type === "TECHNICIAN" && sig.version === report.version);
   const clientSig = report.signatures.find((sig) => sig.type === "CLIENT" && sig.version === report.version);
+  const canValidate = Boolean(currentUser && (currentUser.role === "ADMIN" || currentUser.role === "SUPERVISOR"));
+  const signaturesEnabled = report.status === "READY_FOR_SIGNATURE" && !report.locked;
   const timeRange =
     report.startedAt && report.endedAt
       ? `${new Date(report.startedAt).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })} - ${new Date(report.endedAt).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}`
@@ -101,6 +110,16 @@ export default async function ReportPage({ params }: ReportPageProps) {
           <div className="meta-item">
             <span className="label">Supervisor</span>
             <strong>{report.supervisor.name}</strong>
+          </div>
+        </div>
+
+        <div className="card-section">
+          <div className="filter-chip">
+            <div>
+              <span className="label">Proceso</span>
+              <strong>{statusLabel(report.status)}</strong>
+            </div>
+            <span className={`status-pill ${statusTone(report.status)}`}>{statusLabel(report.status)}</span>
           </div>
         </div>
 
@@ -175,9 +194,9 @@ export default async function ReportPage({ params }: ReportPageProps) {
                 <span>Subir archivos</span>
                 <input name="files" type="file" multiple />
               </label>
-              <button className="button button-secondary" type="submit">
+              <PendingButton className="button button-secondary" type="submit" pendingLabel="Cargando...">
                 Cargar
-              </button>
+              </PendingButton>
             </form>
           </div>
         </div>
@@ -200,18 +219,21 @@ export default async function ReportPage({ params }: ReportPageProps) {
                   <input name="name" defaultValue={report.technician.name} required />
                 </label>
                 <SignaturePad inputName="imagePng" />
-                <button
+                <PendingButton
                   className="button button-primary wide-button"
                   type="submit"
-                  disabled={!currentUser || currentUser.id !== report.technicianId}
+                  disabled={!currentUser || currentUser.id !== report.technicianId || !signaturesEnabled}
+                  pendingLabel="Firmando..."
                   title={
-                    !currentUser || currentUser.id !== report.technicianId
-                      ? "Solo el tecnico asignado puede firmar."
-                      : ""
+                    !signaturesEnabled
+                      ? "Primero valida el acta."
+                      : !currentUser || currentUser.id !== report.technicianId
+                        ? "Solo el tecnico asignado puede firmar."
+                        : ""
                   }
                 >
                   Firmar
-                </button>
+                </PendingButton>
               </form>
             )}
           </div>
@@ -229,13 +251,19 @@ export default async function ReportPage({ params }: ReportPageProps) {
                 <input type="hidden" name="folio" value={report.folio} />
                 <input type="hidden" name="signatureType" value="CLIENT" />
                 <label className="field">
-                  <span>Nombre</span>
+                  <span>Nombre del cliente</span>
                   <input name="name" placeholder="Nombre del cliente" required />
                 </label>
                 <SignaturePad inputName="imagePng" />
-                <button className="button button-primary wide-button" type="submit">
+                <PendingButton
+                  className="button button-primary wide-button"
+                  type="submit"
+                  disabled={!signaturesEnabled}
+                  pendingLabel="Firmando..."
+                  title={!signaturesEnabled ? "Primero valida el acta." : ""}
+                >
                   Firmar
-                </button>
+                </PendingButton>
               </form>
             )}
           </div>
@@ -243,7 +271,10 @@ export default async function ReportPage({ params }: ReportPageProps) {
 
         <div className="card">
           <h2 className="card-title">Editar y validar</h2>
-          <p className="muted">Edita listas (1 por linea). Si ya estaba firmado, al guardar se genera nueva version y se requiere re-firma.</p>
+          <p className="muted">
+            Edita listas (1 por linea). Guardar deja el acta en revision; validar la habilita para firma.
+            Si ya estaba firmado, al guardar se genera nueva version y se requiere re-firma.
+          </p>
           <form className="form-flow" action={updateReportAction}>
             <input type="hidden" name="folio" value={report.folio} />
             <div className="form-grid">
@@ -280,25 +311,40 @@ export default async function ReportPage({ params }: ReportPageProps) {
               <span>Recomendaciones</span>
               <textarea name="recommendations" defaultValue={recommendations.join("\n")} rows={5} />
             </label>
-            <button className="button button-secondary" type="submit">
+            <PendingButton className="button button-secondary" type="submit" pendingLabel="Guardando...">
               Guardar cambios
-            </button>
+            </PendingButton>
           </form>
         </div>
 
+        {canValidate && report.status !== "SIGNED" && report.status !== "CLOSED" ? (
+          <div className="card">
+            <h2 className="card-title">Validación</h2>
+            <p className="muted">
+              Revisa la información. Cuando la valides, se habilitan las firmas del técnico y del cliente.
+            </p>
+            <form className="form-flow" action={validateReportAction}>
+              <input type="hidden" name="folio" value={report.folio} />
+              <PendingButton className="button button-primary" type="submit" pendingLabel="Validando...">
+                Validar acta
+              </PendingButton>
+            </form>
+          </div>
+        ) : null}
+
         <div className="action-row">
-          <Link className="button button-secondary" href="/">
+          <Link className="button button-secondary" href="/" prefetch>
             Volver a actas
           </Link>
-          <Link className="button button-secondary" href="/captura">
+          <Link className="button button-secondary" href="/captura" prefetch>
             Nueva captura
           </Link>
           {(currentUser?.role === "ADMIN" || currentUser?.role === "SUPERVISOR") && report.status === "SIGNED" ? (
             <form action={closeReportAction}>
               <input type="hidden" name="folio" value={report.folio} />
-              <button className="button button-secondary" type="submit">
+              <PendingButton className="button button-secondary" type="submit" pendingLabel="Cerrando...">
                 Cerrar acta
-              </button>
+              </PendingButton>
             </form>
           ) : null}
           <a className="button button-primary" href={`/api/reporte/${encodeURIComponent(report.folio)}/pdf`}>

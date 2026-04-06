@@ -337,6 +337,11 @@ textarea {
   font-weight: 700;
 }
 
+.button:disabled {
+  opacity: 0.72;
+  cursor: progress;
+}
+
 .button-primary {
   background: linear-gradient(135deg, var(--ecosat-cyan), #3dc5ff);
   color: var(--ecosat-ink);
@@ -618,6 +623,63 @@ textarea {
     rgba(255, 255, 255, 0.94);
 }
 
+.capture-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.capture-banner {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(41, 52, 143, 0.08);
+  background: linear-gradient(135deg, rgba(41, 52, 143, 0.04), rgba(0, 174, 239, 0.08));
+}
+
+.capture-banner h3 {
+  margin: 6px 0 0;
+  font-size: 1.25rem;
+}
+
+.capture-step-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.step-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(41, 52, 143, 0.12);
+  background: #ffffff;
+  color: var(--ecosat-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.step-chip-active {
+  background: rgba(0, 174, 239, 0.14);
+  color: var(--ecosat-blue-deep);
+}
+
+.capture-primary,
+.capture-secondary {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(41, 52, 143, 0.08);
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -667,7 +729,6 @@ textarea {
 }
 
 .voice-panel {
-  margin-top: 18px;
   padding: 18px;
   border-radius: 22px;
   border: 1px solid rgba(41, 52, 143, 0.1);
@@ -760,6 +821,28 @@ textarea {
 .check-item p {
   margin: 4px 0 0;
   color: var(--ecosat-muted);
+}
+
+.action-row-spread {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.action-hint {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.action-hint strong {
+  color: var(--ecosat-ink);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .check-icon {
@@ -923,7 +1006,7 @@ textarea {
 
 .signature-canvas {
   width: 100%;
-  max-width: 520px;
+  max-width: 100%;
   height: 160px;
   border-radius: 18px;
   border: 1px dashed rgba(41, 52, 143, 0.25);
@@ -1279,5 +1362,10 @@ body::after {
   .table-row {
     grid-template-columns: 1fr;
     gap: 6px;
+  }
+
+  .capture-banner,
+  .action-row-spread {
+    align-items: stretch;
   }
 }
